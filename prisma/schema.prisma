@@ -1,0 +1,140 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  SALES
+}
+
+enum ProposalStatus {
+  DRAFT
+  GENERATING
+  REVIEW
+  APPROVED
+  SENT
+  ARCHIVED
+}
+
+enum JobStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  name         String
+  passwordHash String
+  role         Role       @default(SALES)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  proposals    Proposal[]
+  activities   Activity[]
+}
+
+model Client {
+  id              String     @id @default(cuid())
+  name            String
+  nameZh          String?
+  websiteUrl      String
+  industry        String?
+  targetMarket    String?
+  // Phase 1 研究数据 — 5 类 JSON
+  hardData        Json?      // 1.1 硬数据(行业排名、规模数字等)
+  ecosystem       Json?      // 1.2 业务生态(子品牌、社区、工具)
+  differentiation Json?      // 1.3 核心差异化定位(客户原话)
+  weaknessDiagnosis Json?    // 1.4 官网弱点诊断
+  leverageableAssets Json?   // 1.5 可利用资产
+  researchedAt    DateTime?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  proposals       Proposal[]
+}
+
+model Proposal {
+  id            String         @id @default(cuid())
+  title         String
+  status        ProposalStatus @default(DRAFT)
+  clientId      String
+  client        Client         @relation(fields: [clientId], references: [id])
+  authorId      String
+  author        User           @relation(fields: [authorId], references: [id])
+  // 10 段数据 — 独立 JSON 列支持单段编辑/重新生成
+  heroData      Json?          // 段00 Hero
+  profileData   Json?          // 段01 公司画像
+  diagnosisData Json?          // 段02 机会与诊断
+  competitorData Json?         // 段02.5 竞品对标
+  serviceData   Json?          // 段03 服务方案
+  pricingData   Json?          // 段04 合作结构
+  outcomeData   Json?          // 段04.5 预期效果
+  timelineData  Json?          // 段05 执行路径
+  upsellData    Json?          // 段06 更多可能
+  ctaData       Json?          // CTA
+  htmlContent   String?        @db.Text // 完整渲染 HTML
+  qualityScore  Int?
+  qualityChecks Json?          // 质检结果
+  templateId    String?
+  template      ProposalTemplate? @relation(fields: [templateId], references: [id])
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  jobs          GenerationJob[]
+  versions      ProposalVersion[]
+  activities    Activity[]
+}
+
+model ProposalTemplate {
+  id           String     @id @default(cuid())
+  name         String
+  cssContent   String     @db.Text // ~960行 CSS
+  htmlSkeleton String     @db.Text // 带占位符的 DOM
+  placeholders Json       // 占位符列表
+  isLocked     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  proposals    Proposal[]
+}
+
+model GenerationJob {
+  id          String    @id @default(cuid())
+  proposalId  String
+  proposal    Proposal  @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  status      JobStatus @default(QUEUED)
+  currentStep String?
+  progress    Int       @default(0) // 0-100
+  stepsLog    Json?     // [{step, status, message, timestamp}]
+  error       String?
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model ProposalVersion {
+  id            String   @id @default(cuid())
+  proposalId    String
+  proposal      Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  versionNumber Int
+  htmlContent   String   @db.Text
+  sectionData   Json?
+  createdAt     DateTime @default(now())
+
+  @@unique([proposalId, versionNumber])
+}
+
+model Activity {
+  id          String    @id @default(cuid())
+  type        String    // PROPOSAL_CREATED, RESEARCH_COMPLETED, etc.
+  description String
+  userId      String?
+  user        User?     @relation(fields: [userId], references: [id])
+  proposalId  String?
+  proposal    Proposal? @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+}
