@@ -10,7 +10,11 @@ function createPrismaClient() {
   if (!connectionString) {
     throw new Error("DATABASE_URL environment variable is not set");
   }
-  const adapter = new PrismaPg(connectionString);
+  const url = new URL(connectionString);
+  if (!url.searchParams.has("sslmode")) {
+    url.searchParams.set("sslmode", "require");
+  }
+  const adapter = new PrismaPg(url.toString());
   return new PrismaClient({ adapter });
 }
 
