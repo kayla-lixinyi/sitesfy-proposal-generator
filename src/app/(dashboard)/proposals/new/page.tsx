@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -1334,6 +1334,14 @@ function Step4QualityExport({
 /* ─── Main Wizard Page ─── */
 
 export default function NewProposalPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>}>
+      <NewProposalPageInner />
+    </Suspense>
+  );
+}
+
+function NewProposalPageInner() {
   const searchParams = useSearchParams();
   const typeParam = searchParams.get("type");
   const clientIdParam = searchParams.get("clientId");
