@@ -1,12 +1,8 @@
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import { getToken } from "next-auth/jwt";
+import { auth } from "@/lib/auth";
 
-const secret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
-
-export async function proxy(req: NextRequest) {
-  const token = await getToken({ req, secret });
-  const isLoggedIn = !!token;
+export const proxy = auth((req) => {
+  const isLoggedIn = !!req.auth;
   const isAuthPage = req.nextUrl.pathname.startsWith("/login");
   const isApiAuth = req.nextUrl.pathname.startsWith("/api/auth");
 
@@ -24,7 +20,7 @@ export async function proxy(req: NextRequest) {
   }
 
   return NextResponse.next();
-}
+});
 
 export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
