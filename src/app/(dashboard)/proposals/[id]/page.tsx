@@ -189,8 +189,6 @@ export default function ProposalEditorPage() {
   const [previewDevice, setPreviewDevice] = useState<"desktop" | "tablet" | "mobile">("desktop");
   const [zoom, setZoom] = useState(100);
   const [exporting, setExporting] = useState(false);
-  const [showDownload, setShowDownload] = useState(false);
-  const downloadRef = useRef<HTMLDivElement>(null);
   const [leftWidth, setLeftWidth] = useState(380);
   const [rightWidth, setRightWidth] = useState(380);
   const dragging = useRef(false);
@@ -400,28 +398,6 @@ export default function ProposalEditorPage() {
     setEditingTitle(false);
   }
 
-  // Export PDF
-  async function exportPdf() {
-    setExporting(true);
-    try {
-      const res = await fetch(`/api/proposals/${proposalId}/export-pdf`, {
-        method: "POST",
-      });
-      if (!res.ok) throw new Error("导出失败");
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `Sitesfy_x_${proposal?.client.name ?? "Client"}_Proposal.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setExporting(false);
-    }
-  }
-
   // Export HTML
   function exportHtml() {
     if (!proposal?.htmlContent) return;
@@ -432,7 +408,6 @@ export default function ProposalEditorPage() {
     a.download = `Sitesfy_x_${proposal.client.name ?? "Client"}_Proposal.html`;
     a.click();
     URL.revokeObjectURL(url);
-    setShowDownload(false);
   }
 
   // Delete proposal
@@ -673,45 +648,16 @@ export default function ProposalEditorPage() {
           <Clock className="h-3.5 w-3.5" />
           版本
         </Button>
-        <div className="relative" ref={downloadRef}>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowDownload(!showDownload)}
-            disabled={exporting || !proposal.htmlContent}
-            className="gap-1"
-          >
-            {exporting ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Download className="h-3.5 w-3.5" />
-            )}
-            下载
-            <ChevronDown className="h-3 w-3" />
-          </Button>
-          {showDownload && (
-            <>
-              <div
-                className="fixed inset-0 z-40"
-                onClick={() => setShowDownload(false)}
-              />
-              <div className="absolute right-0 top-full z-50 mt-1 w-32 rounded-lg border bg-card py-1 shadow-lg">
-                <button
-                  onClick={() => { setShowDownload(false); exportPdf(); }}
-                  className="flex w-full items-center gap-2 px-3 py-1.5 text-xs hover:bg-muted"
-                >
-                  PDF
-                </button>
-                <button
-                  onClick={exportHtml}
-                  className="flex w-full items-center gap-2 px-3 py-1.5 text-xs hover:bg-muted"
-                >
-                  HTML
-                </button>
-              </div>
-            </>
-          )}
-        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={exportHtml}
+          disabled={exporting || !proposal.htmlContent}
+          className="gap-1"
+        >
+          <Download className="h-3.5 w-3.5" />
+          下载 HTML
+        </Button>
         <Button
           variant={showAI ? "default" : "outline"}
           size="sm"

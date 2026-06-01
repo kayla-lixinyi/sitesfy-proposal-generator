@@ -10,7 +10,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(request: NextRequest) {
   const session = await auth();
-  if (!session?.user) {
+  if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
   const page = parseInt(searchParams.get("page") ?? "1");
   const limit = parseInt(searchParams.get("limit") ?? "20");
 
-  const where: Record<string, unknown> = {};
+  const where: Record<string, unknown> = { authorId: session.user.id };
   if (status) where.status = status;
   if (clientId) where.clientId = clientId;
   if (search) {

@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Plus, Search } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 import ProposalRowActions from "@/components/proposal/row-actions";
 
 export const dynamic = "force-dynamic";
@@ -16,7 +18,10 @@ export default async function ProposalsPage({
   const page = parseInt(sp.page ?? "1");
   const limit = 20;
 
-  const where: Record<string, unknown> = {};
+  const session = await auth();
+  if (!session?.user?.id) redirect("/login");
+
+  const where: Record<string, unknown> = { authorId: session.user.id };
   if (search) {
     where.OR = [
       { title: { contains: search, mode: "insensitive" } },

@@ -1,17 +1,25 @@
 import { FileText, PenTool, Send, Star, RefreshCcw, Rocket, ArrowRight, Sparkles } from "lucide-react";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 import Link from "next/link";
 import ProposalRowActions from "@/components/proposal/row-actions";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
+  const session = await auth();
+  if (!session?.user?.id) redirect("/login");
+
+  const uf = { authorId: session.user.id };
+
   const [totalProposals, activeDrafts, sentThisMonth, proposals] =
     await Promise.all([
-      prisma.proposal.count(),
-      prisma.proposal.count({ where: { status: "DRAFT" } }),
+      prisma.proposal.count({ where: uf }),
+      prisma.proposal.count({ where: { ...uf, status: "DRAFT" } }),
       prisma.proposal.count({
         where: {
+          ...uf,
           status: "SENT",
           updatedAt: {
             gte: new Date(
@@ -23,6 +31,7 @@ export default async function DashboardPage() {
         },
       }),
       prisma.proposal.findMany({
+        where: uf,
         include: {
           client: { select: { name: true } },
           author: { select: { name: true } },
@@ -34,7 +43,7 @@ export default async function DashboardPage() {
 
   // Calculate average quality score
   const scored = await prisma.proposal.findMany({
-    where: { qualityScore: { not: null } },
+    where: { ...uf, qualityScore: { not: null } },
     select: { qualityScore: true },
   });
   const avgScore =

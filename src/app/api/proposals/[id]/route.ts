@@ -34,6 +34,10 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
+  if (proposal.authorId !== session.user!.id) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   return NextResponse.json(proposal);
 }
 
@@ -101,11 +105,18 @@ export async function PATCH(
     }
   }
 
-  // Get old proposal for change detection
+  // Get old proposal for change detection + ownership check
   const oldProposal = await prisma.proposal.findUnique({
     where: { id },
-    select: { status: true, title: true },
+    select: { status: true, title: true, authorId: true },
   });
+
+  if (!oldProposal) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+  if (oldProposal.authorId !== session.user!.id) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const proposal = await prisma.proposal.update({
     where: { id },
@@ -173,6 +184,10 @@ export async function DELETE(
 
   if (!proposal) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  if (proposal.authorId !== session.user!.id) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   // Log activity before cascade delete removes it
