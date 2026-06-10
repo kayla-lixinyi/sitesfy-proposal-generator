@@ -61,8 +61,9 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const now = new Date();
     const client = await prisma.client.create({
-      data: { name, nameZh, websiteUrl, industry, targetMarket },
+      data: { name, nameZh, websiteUrl, industry, targetMarket, updatedAt: now },
     });
 
     return NextResponse.json(client, { status: 201 });

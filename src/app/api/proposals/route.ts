@@ -86,12 +86,14 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const now = new Date();
     const proposal = await prisma.proposal.create({
       data: {
         title,
         clientId,
         authorId: session.user.id,
         status: "DRAFT",
+        updatedAt: now,
         ...sectionData,
       },
       include: {

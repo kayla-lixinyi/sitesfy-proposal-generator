@@ -45,6 +45,7 @@ export async function POST(
       progress: 0,
       startedAt: new Date(),
       stepsLog: [],
+      updatedAt: new Date(),
     },
   });
 

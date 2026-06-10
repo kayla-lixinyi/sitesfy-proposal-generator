@@ -56,6 +56,7 @@ export async function POST(request: NextRequest) {
       cssContent,
       htmlSkeleton,
       placeholders: placeholders ?? [],
+      updatedAt: new Date(),
     },
   });
 
