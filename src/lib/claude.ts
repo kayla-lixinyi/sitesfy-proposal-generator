@@ -5,10 +5,17 @@
 
 import OpenAI from "openai";
 
-const client = new OpenAI({
-  apiKey: process.env.LLM_API_KEY,
-  baseURL: process.env.LLM_BASE_URL,
-});
+let _client: OpenAI | null = null;
+
+function getClient() {
+  if (!_client) {
+    _client = new OpenAI({
+      apiKey: process.env.LLM_API_KEY,
+      baseURL: process.env.LLM_BASE_URL,
+    });
+  }
+  return _client;
+}
 
 const MODEL = process.env.LLM_MODEL ?? "anthropic/claude-opus-4.7";
 
@@ -37,7 +44,7 @@ export async function callClaude(options: ClaudeCallOptions): Promise<string> {
     messages.push({ role: m.role, content: m.content });
   }
 
-  const response = await client.chat.completions.create({
+  const response = await getClient().chat.completions.create({
     model: MODEL,
     max_tokens: options.maxTokens ?? 4096,
     temperature: options.temperature ?? 0.3,
@@ -62,7 +69,7 @@ export async function* streamClaude(
     messages.push({ role: m.role, content: m.content });
   }
 
-  const stream = await client.chat.completions.create({
+  const stream = await getClient().chat.completions.create({
     model: MODEL,
     max_tokens: options.maxTokens ?? 4096,
     temperature: options.temperature ?? 0.3,
