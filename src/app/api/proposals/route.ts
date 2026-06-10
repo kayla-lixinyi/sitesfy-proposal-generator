@@ -85,29 +85,37 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const proposal = await prisma.proposal.create({
-    data: {
-      title,
-      clientId,
-      authorId: session.user.id,
-      status: "DRAFT",
-      ...sectionData,
-    },
-    include: {
-      client: { select: { id: true, name: true } },
-    },
-  });
+  try {
+    const proposal = await prisma.proposal.create({
+      data: {
+        title,
+        clientId,
+        authorId: session.user.id,
+        status: "DRAFT",
+        ...sectionData,
+      },
+      include: {
+        client: { select: { id: true, name: true } },
+      },
+    });
 
-  await prisma.activity.create({
-    data: {
-      type: duplicateFrom ? "PROPOSAL_DUPLICATED" : "PROPOSAL_CREATED",
-      description: duplicateFrom
-        ? `复制了提案「${title}」`
-        : `创建了提案「${title}」`,
-      userId: session.user.id,
-      proposalId: proposal.id,
-    },
-  });
+    await prisma.activity.create({
+      data: {
+        type: duplicateFrom ? "PROPOSAL_DUPLICATED" : "PROPOSAL_CREATED",
+        description: duplicateFrom
+          ? `复制了提案「${title}」`
+          : `创建了提案「${title}」`,
+        userId: session.user.id,
+        proposalId: proposal.id,
+      },
+    });
 
-  return NextResponse.json(proposal, { status: 201 });
+    return NextResponse.json(proposal, { status: 201 });
+  } catch (error) {
+    console.error("[POST /api/proposals] error:", error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "创建提案失败" },
+      { status: 500 }
+    );
+  }
 }

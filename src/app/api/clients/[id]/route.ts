@@ -20,27 +20,35 @@ export async function GET(
 
   const { id } = await params;
 
-  const client = await prisma.client.findUnique({
-    where: { id },
-    include: {
-      proposals: {
-        select: {
-          id: true,
-          title: true,
-          status: true,
-          qualityScore: true,
-          updatedAt: true,
+  try {
+    const client = await prisma.client.findUnique({
+      where: { id },
+      include: {
+        proposals: {
+          select: {
+            id: true,
+            title: true,
+            status: true,
+            qualityScore: true,
+            updatedAt: true,
+          },
+          orderBy: { updatedAt: "desc" },
         },
-        orderBy: { updatedAt: "desc" },
       },
-    },
-  });
+    });
 
-  if (!client) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (!client) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    return NextResponse.json(client);
+  } catch (error) {
+    console.error("[GET /api/clients/[id]] error:", error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "获取客户失败" },
+      { status: 500 }
+    );
   }
-
-  return NextResponse.json(client);
 }
 
 export async function PATCH(

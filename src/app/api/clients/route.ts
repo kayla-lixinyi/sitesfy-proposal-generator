@@ -60,9 +60,17 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const client = await prisma.client.create({
-    data: { name, nameZh, websiteUrl, industry, targetMarket },
-  });
+  try {
+    const client = await prisma.client.create({
+      data: { name, nameZh, websiteUrl, industry, targetMarket },
+    });
 
-  return NextResponse.json(client, { status: 201 });
+    return NextResponse.json(client, { status: 201 });
+  } catch (error) {
+    console.error("[POST /api/clients] error:", error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "创建客户失败" },
+      { status: 500 }
+    );
+  }
 }

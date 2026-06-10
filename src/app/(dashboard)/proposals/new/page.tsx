@@ -282,8 +282,10 @@ function Step1ClientInfo({
           }),
         });
         if (!clientRes.ok) {
-          const data = await clientRes.json();
-          throw new Error(data.error || "创建客户失败");
+          const text = await clientRes.text();
+          let msg = "创建客户失败";
+          try { msg = JSON.parse(text).error || msg; } catch {}
+          throw new Error(msg);
         }
         const client = await clientRes.json();
         clientId = client.id;
@@ -297,8 +299,10 @@ function Step1ClientInfo({
         body: JSON.stringify({ title: proposalTitle, clientId }),
       });
       if (!proposalRes.ok) {
-        const data = await proposalRes.json();
-        throw new Error(data.error || "创建提案失败");
+        const text = await proposalRes.text();
+        let msg = "创建提案失败";
+        try { msg = JSON.parse(text).error || msg; } catch {}
+        throw new Error(msg);
       }
       const proposal = await proposalRes.json();
 
@@ -570,7 +574,10 @@ function Step2Research({
   useEffect(() => {
     if (client.researchedAt) {
       fetch(`/api/clients/${client.id}`)
-        .then((r) => r.json())
+        .then((r) => {
+          if (!r.ok) throw new Error(`HTTP ${r.status}`);
+          return r.json();
+        })
         .then((data) => {
           const r: ResearchResult = {
             hardData: data.hardData ?? {},
@@ -606,8 +613,10 @@ function Step2Research({
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "研究失败");
+        const text = await res.text();
+        let msg = "研究失败";
+        try { msg = JSON.parse(text).error || msg; } catch {}
+        throw new Error(msg);
       }
 
       // SSE stream
