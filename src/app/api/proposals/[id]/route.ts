@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma, cuid } from "@/lib/prisma";
 
 export async function GET(
   _request: NextRequest,
@@ -155,6 +155,7 @@ export async function PATCH(
   if (activities.length > 0) {
     await prisma.activity.createMany({
       data: activities.map((a) => ({
+        id: cuid(),
         ...a,
         userId: session.user!.id,
         proposalId: id,
@@ -193,6 +194,7 @@ export async function DELETE(
   // Log activity before cascade delete removes it
   await prisma.activity.create({
     data: {
+      id: cuid(),
       type: "PROPOSAL_DELETED",
       description: `删除了提案「${proposal.title}」（客户：${proposal.client.name}）`,
       userId: session.user!.id,

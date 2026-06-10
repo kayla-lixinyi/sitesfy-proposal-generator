@@ -11,7 +11,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma, cuid } from "@/lib/prisma";
 import { fetchWebsiteContent, runResearch } from "@/lib/pipeline/research";
 import { generateSections } from "@/lib/pipeline/generate";
 import { renderProposal, type ProposalSections } from "@/lib/template-engine";
@@ -39,6 +39,7 @@ export async function POST(
   // Create generation job
   const job = await prisma.generationJob.create({
     data: {
+      id: cuid(),
       proposalId: id,
       status: "RUNNING",
       currentStep: "初始化",
@@ -233,6 +234,7 @@ async function runPipeline(
 
     await prisma.proposalVersion.create({
       data: {
+        id: cuid(),
         proposalId,
         versionNumber: nextVersion,
         htmlContent,
@@ -253,6 +255,7 @@ async function runPipeline(
 
     await prisma.activity.create({
       data: {
+        id: cuid(),
         type: "PROPOSAL_GENERATED",
         description: `提案生成完成，自动保存为版本 v${nextVersion}`,
         userId,

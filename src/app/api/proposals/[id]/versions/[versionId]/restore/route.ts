@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma, cuid } from "@/lib/prisma";
 
 export async function POST(
   _request: NextRequest,
@@ -47,6 +47,7 @@ export async function POST(
 
   await prisma.activity.create({
     data: {
+      id: cuid(),
       type: "VERSION_RESTORED",
       description: `恢复到版本 v${version.versionNumber}`,
       userId: session.user.id,

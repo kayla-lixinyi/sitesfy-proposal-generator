@@ -11,7 +11,7 @@
 
 import { NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma, cuid } from "@/lib/prisma";
 import { streamClaude, type ClaudeMessage } from "@/lib/claude";
 import { buildSystemMessage } from "@/lib/prompts/shared/system-preamble";
 
@@ -217,6 +217,7 @@ export async function POST(
           const labels = updatedSections.map((k) => SECTION_LABELS[k] ?? k).join("、");
           await prisma.activity.create({
             data: {
+              id: cuid(),
               type: "AI_CHAT_EDIT",
               description: `通过 AI 助手修改了：${labels}`,
               userId: session.user!.id,

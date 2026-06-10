@@ -6,7 +6,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma, cuid, now } from "@/lib/prisma";
 
 export async function GET(request: NextRequest) {
   const session = await auth();
@@ -61,9 +61,8 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const now = new Date();
     const client = await prisma.client.create({
-      data: { name, nameZh, websiteUrl, industry, targetMarket, updatedAt: now },
+      data: { id: cuid(), name, nameZh, websiteUrl, industry, targetMarket, updatedAt: now() },
     });
 
     return NextResponse.json(client, { status: 201 });

@@ -6,7 +6,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma, cuid, now } from "@/lib/prisma";
 
 export async function GET(request: NextRequest) {
   const session = await auth();
@@ -86,14 +86,14 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const now = new Date();
     const proposal = await prisma.proposal.create({
       data: {
+        id: cuid(),
         title,
         clientId,
         authorId: session.user.id,
         status: "DRAFT",
-        updatedAt: now,
+        updatedAt: now(),
         ...sectionData,
       },
       include: {
@@ -103,6 +103,7 @@ export async function POST(request: NextRequest) {
 
     await prisma.activity.create({
       data: {
+        id: cuid(),
         type: duplicateFrom ? "PROPOSAL_DUPLICATED" : "PROPOSAL_CREATED",
         description: duplicateFrom
           ? `复制了提案「${title}」`

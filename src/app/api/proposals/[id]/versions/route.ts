@@ -6,7 +6,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma, cuid } from "@/lib/prisma";
 
 export async function GET(
   _request: NextRequest,
@@ -76,6 +76,7 @@ export async function POST(
 
   const version = await prisma.proposalVersion.create({
     data: {
+      id: cuid(),
       proposalId: id,
       versionNumber: nextVersion,
       htmlContent: proposal.htmlContent,
@@ -85,6 +86,7 @@ export async function POST(
 
   await prisma.activity.create({
     data: {
+      id: cuid(),
       type: "VERSION_CREATED",
       description: `保存了版本 v${nextVersion}`,
       userId: session.user.id,
