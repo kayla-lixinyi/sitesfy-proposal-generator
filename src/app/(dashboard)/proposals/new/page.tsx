@@ -401,9 +401,15 @@ function Step1ClientInfo({
       <div>
         <label className="mb-1 block text-sm font-medium">官网 URL</label>
         <input
-          type="url"
+          type="text"
           value={websiteUrl}
           onChange={(e) => setWebsiteUrl(e.target.value)}
+          onBlur={() => {
+            const v = websiteUrl.trim();
+            if (v && !/^https?:\/\//i.test(v)) {
+              setWebsiteUrl(`https://${v}`);
+            }
+          }}
           placeholder="https://www.lcsc.com"
           className="h-9 w-full rounded-lg border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
         />
