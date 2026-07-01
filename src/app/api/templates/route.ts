@@ -50,6 +50,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const timestamp = now();
   const template = await prisma.proposalTemplate.create({
     data: {
       id: cuid(),
@@ -57,7 +58,8 @@ export async function POST(request: NextRequest) {
       cssContent,
       htmlSkeleton,
       placeholders: placeholders ?? [],
-      updatedAt: now(),
+      createdAt: timestamp,
+      updatedAt: timestamp,
     },
   });
 

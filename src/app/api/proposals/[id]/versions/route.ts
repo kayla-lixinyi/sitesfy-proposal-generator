@@ -6,7 +6,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma, cuid } from "@/lib/prisma";
+import { prisma, cuid, now } from "@/lib/prisma";
 
 export async function GET(
   _request: NextRequest,
@@ -81,6 +81,7 @@ export async function POST(
       versionNumber: nextVersion,
       htmlContent: proposal.htmlContent,
       sectionData: sectionData as object,
+      createdAt: now(),
     },
   });
 
@@ -91,6 +92,7 @@ export async function POST(
       description: `保存了版本 v${nextVersion}`,
       userId: session.user.id,
       proposalId: id,
+      createdAt: now(),
     },
   });
 

@@ -11,7 +11,7 @@
 
 import { NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma, cuid } from "@/lib/prisma";
+import { prisma, cuid, now } from "@/lib/prisma";
 import { streamClaude, type ClaudeMessage } from "@/lib/claude";
 import { buildSystemMessage } from "@/lib/prompts/shared/system-preamble";
 
@@ -222,6 +222,7 @@ export async function POST(
               description: `通过 AI 助手修改了：${labels}`,
               userId: session.user!.id,
               proposalId: id,
+              createdAt: now(),
             },
           });
         }

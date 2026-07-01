@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma, cuid } from "@/lib/prisma";
+import { prisma, cuid, now } from "@/lib/prisma";
 import { callClaudeJSON } from "@/lib/claude";
 import { buildQualityCheckPrompt } from "@/lib/prompts/quality/quality-check";
 
@@ -252,6 +252,7 @@ export async function POST(
       description: `执行质检，得分 ${qualityScore}（${passedCount}/${allChecks.length} 通过）`,
       userId: session.user.id,
       proposalId: id,
+      createdAt: now(),
     },
   });
 

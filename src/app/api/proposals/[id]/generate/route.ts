@@ -11,7 +11,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma, cuid } from "@/lib/prisma";
+import { prisma, cuid, now } from "@/lib/prisma";
 import { fetchWebsiteContent, runResearch } from "@/lib/pipeline/research";
 import { generateSections } from "@/lib/pipeline/generate";
 import { renderProposal, type ProposalSections } from "@/lib/template-engine";
@@ -37,6 +37,7 @@ export async function POST(
   }
 
   // Create generation job
+  const timestamp = now();
   const job = await prisma.generationJob.create({
     data: {
       id: cuid(),
@@ -46,7 +47,8 @@ export async function POST(
       progress: 0,
       startedAt: new Date(),
       stepsLog: [],
-      updatedAt: new Date(),
+      createdAt: timestamp,
+      updatedAt: timestamp,
     },
   });
 
@@ -94,6 +96,10 @@ async function runPipeline(
   }
 
   try {
+    const hasUsableWebsite =
+      /^https?:\/\//i.test(client.websiteUrl) &&
+      client.websiteUrl !== "https://placeholder.local";
+
     // Step 1: Research (use existing or run new)
     let research = {
       hardData: (client.hardData as Record<string, unknown>) ?? {},
@@ -110,7 +116,22 @@ async function runPipeline(
 
     const needsResearch = !hasValidResearch(client.hardData) || !hasValidResearch(client.differentiation);
 
-    if (needsResearch) {
+    if (needsResearch && !hasUsableWebsite) {
+      research = {
+        hardData: {
+          note: "未提供官网或可抓取资料，基于客户名称生成提案初稿。",
+        },
+        ecosystem: {},
+        differentiation: {
+          note: "未提供客户差异化资料，生成时需使用通用行业假设并保持可编辑。",
+        },
+        diagnosis: {
+          note: "未提供官网，无法执行官网诊断。",
+        },
+        assets: {},
+      };
+      log("研究数据", "completed", "未提供官网，跳过网页抓取");
+    } else if (needsResearch) {
       await prisma.generationJob.update({
         where: { id: jobId },
         data: { currentStep: "客户研究", progress: 5, stepsLog },
@@ -250,6 +271,7 @@ async function runPipeline(
           upsellData: sections.upsellData,
           ctaData: sections.ctaData,
         } as object,
+        createdAt: now(),
       },
     });
 
@@ -260,6 +282,7 @@ async function runPipeline(
         description: `提案生成完成，自动保存为版本 v${nextVersion}`,
         userId,
         proposalId,
+        createdAt: now(),
       },
     });
   } catch (error) {

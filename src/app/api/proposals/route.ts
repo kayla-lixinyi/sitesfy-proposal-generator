@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
   }
 
   // If duplicating, copy section data from source proposal
-  let sectionData: Record<string, unknown> = {};
+  const sectionData: Record<string, unknown> = {};
   if (duplicateFrom) {
     const source = await prisma.proposal.findUnique({
       where: { id: duplicateFrom },
@@ -86,6 +86,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const timestamp = now();
     const proposal = await prisma.proposal.create({
       data: {
         id: cuid(),
@@ -93,7 +94,8 @@ export async function POST(request: NextRequest) {
         clientId,
         authorId: session.user.id,
         status: "DRAFT",
-        updatedAt: now(),
+        createdAt: timestamp,
+        updatedAt: timestamp,
         ...sectionData,
       },
       include: {
@@ -110,6 +112,7 @@ export async function POST(request: NextRequest) {
           : `创建了提案「${title}」`,
         userId: session.user.id,
         proposalId: proposal.id,
+        createdAt: now(),
       },
     });
 

@@ -51,18 +51,34 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { name, nameZh, websiteUrl, industry, targetMarket } = body;
+  const name = typeof body.name === "string" ? body.name.trim() : "";
+  const nameZh = typeof body.nameZh === "string" ? body.nameZh.trim() : "";
+  const websiteUrl =
+    typeof body.websiteUrl === "string" ? body.websiteUrl.trim() : "";
+  const industry = typeof body.industry === "string" ? body.industry.trim() : "";
+  const targetMarket =
+    typeof body.targetMarket === "string" ? body.targetMarket.trim() : "";
 
-  if (!name || !websiteUrl) {
+  if (!name) {
     return NextResponse.json(
-      { error: "name and websiteUrl are required" },
+      { error: "name is required" },
       { status: 400 }
     );
   }
 
   try {
+    const timestamp = now();
     const client = await prisma.client.create({
-      data: { id: cuid(), name, nameZh, websiteUrl, industry, targetMarket, updatedAt: now() },
+      data: {
+        id: cuid(),
+        name,
+        nameZh: nameZh || undefined,
+        websiteUrl: websiteUrl || "https://placeholder.local",
+        industry: industry || undefined,
+        targetMarket: targetMarket || undefined,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      },
     });
 
     return NextResponse.json(client, { status: 201 });

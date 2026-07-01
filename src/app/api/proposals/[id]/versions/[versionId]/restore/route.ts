@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma, cuid } from "@/lib/prisma";
+import { prisma, cuid, now } from "@/lib/prisma";
 
 export async function POST(
   _request: NextRequest,
@@ -52,6 +52,7 @@ export async function POST(
       description: `恢复到版本 v${version.versionNumber}`,
       userId: session.user.id,
       proposalId: id,
+      createdAt: now(),
     },
   });
 

@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma, cuid } from "@/lib/prisma";
+import { prisma, cuid, now } from "@/lib/prisma";
 
 export async function GET(
   _request: NextRequest,
@@ -199,6 +199,7 @@ export async function DELETE(
       description: `删除了提案「${proposal.title}」（客户：${proposal.client.name}）`,
       userId: session.user!.id,
       // Don't link proposalId since it's about to be deleted
+      createdAt: now(),
     },
   });
 
