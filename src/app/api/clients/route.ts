@@ -69,11 +69,24 @@ export async function POST(request: NextRequest) {
   try {
     const id = cuid();
     const timestamp = now();
+    let createdById = session.user.id;
+
+    if (!createdById && session.user.email) {
+      const user = await prisma.user.findUnique({
+        where: { email: session.user.email },
+        select: { id: true },
+      });
+      createdById = user?.id;
+    }
+
+    if (!createdById) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     // Prisma v7 + WASM 编译器忽略 @id @default(cuid()) 和 @updatedAt 的显式值，
     // 用 $executeRaw 直接写入，绕过 ORM 层确保 id/updatedAt 不为 null
     await prisma.$executeRaw`
-      INSERT INTO "Client" ("id", "name", "nameZh", "websiteUrl", "industry", "targetMarket", "createdAt", "updatedAt")
+      INSERT INTO "Client" ("id", "name", "nameZh", "websiteUrl", "industry", "targetMarket", "createdById", "createdAt", "updatedAt")
       VALUES (
         ${id},
         ${name},
@@ -81,6 +94,7 @@ export async function POST(request: NextRequest) {
         ${websiteUrl || "https://placeholder.local"},
         ${industry || null},
         ${targetMarket || null},
+        ${createdById},
         ${timestamp},
         ${timestamp}
       )

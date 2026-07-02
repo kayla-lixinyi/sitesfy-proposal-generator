@@ -37,6 +37,7 @@ model User {
   updatedAt    DateTime   @updatedAt
   proposals    Proposal[]
   activities   Activity[]
+  clients      Client[]
 }
 
 model Client {
@@ -46,6 +47,8 @@ model Client {
   websiteUrl      String
   industry        String?
   targetMarket    String?
+  createdById     String
+  createdBy       User       @relation(fields: [createdById], references: [id])
   // Phase 1 研究数据 — 5 类 JSON
   hardData        Json?      // 1.1 硬数据(行业排名、规模数字等)
   ecosystem       Json?      // 1.2 业务生态(子品牌、社区、工具)
