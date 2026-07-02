@@ -342,11 +342,18 @@ export default function ProposalEditorPage() {
   const fetchProposal = useCallback(async () => {
     try {
       const res = await fetch(`/api/proposals/${proposalId}`);
+      if (res.status === 404) {
+        setProposal(null);
+        setError("提案不存在，可能已被删除或链接已失效");
+        return;
+      }
       if (!res.ok) throw new Error("加载失败");
       const data = await res.json();
       setProposal(data);
       setTitleDraft(data.title);
+      setError("");
     } catch (err) {
+      setProposal(null);
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
@@ -556,7 +563,9 @@ export default function ProposalEditorPage() {
   if (!proposal) {
     return (
       <div className="space-y-4">
-        <p className="text-muted-foreground">提案不存在</p>
+        <p className="text-muted-foreground">
+          {error || "提案不存在"}
+        </p>
         <Link href="/proposals">
           <Button variant="outline" className="gap-1.5">
             <ArrowLeft className="h-4 w-4" />
