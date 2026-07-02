@@ -235,6 +235,60 @@ async function runPipeline(
       },
     });
 
+    try {
+      // Auto-create a version snapshot after generation. This is non-critical:
+      // the proposal HTML is already saved above, so snapshot failures must not
+      // hide the generated preview from the user.
+      const lastVersion = await prisma.proposalVersion.findFirst({
+        where: { proposalId },
+        orderBy: { versionNumber: "desc" },
+      });
+      const nextVersion = (lastVersion?.versionNumber ?? 0) + 1;
+      const snapshotTime = now();
+      const sectionData = {
+        heroData: sections.heroData,
+        profileData: sections.profileData,
+        diagnosisData: sections.diagnosisData,
+        competitorData: sections.competitorData,
+        serviceData: sections.serviceData,
+        pricingData: sections.pricingData,
+        outcomeData: sections.outcomeData,
+        timelineData: sections.timelineData,
+        upsellData: sections.upsellData,
+        ctaData: sections.ctaData,
+      };
+
+      await prisma.$executeRaw`
+        INSERT INTO "ProposalVersion" ("id", "proposalId", "versionNumber", "htmlContent", "sectionData", "createdAt")
+        VALUES (
+          ${cuid()},
+          ${proposalId},
+          ${nextVersion},
+          ${htmlContent},
+          ${JSON.stringify(sectionData)}::jsonb,
+          ${snapshotTime}
+        )
+      `;
+
+      await prisma.$executeRaw`
+        INSERT INTO "Activity" ("id", "type", "description", "userId", "proposalId", "createdAt")
+        VALUES (
+          ${cuid()},
+          ${"PROPOSAL_GENERATED"},
+          ${`提案生成完成，自动保存为版本 v${nextVersion}`},
+          ${userId},
+          ${proposalId},
+          ${snapshotTime}
+        )
+      `;
+      log("版本快照", "completed", `已保存 v${nextVersion}`);
+    } catch (snapshotError) {
+      const snapshotErrorMsg =
+        snapshotError instanceof Error ? snapshotError.message : String(snapshotError);
+      console.error("[generate] snapshot/activity failed:", snapshotError);
+      log("版本快照", "failed", snapshotErrorMsg);
+    }
+
     await prisma.generationJob.update({
       where: { id: jobId },
       data: {
@@ -243,46 +297,6 @@ async function runPipeline(
         progress: 100,
         stepsLog,
         completedAt: new Date(),
-      },
-    });
-
-    // Auto-create a version snapshot after generation
-    const lastVersion = await prisma.proposalVersion.findFirst({
-      where: { proposalId },
-      orderBy: { versionNumber: "desc" },
-    });
-    const nextVersion = (lastVersion?.versionNumber ?? 0) + 1;
-
-    await prisma.proposalVersion.create({
-      data: {
-        id: cuid(),
-        proposalId,
-        versionNumber: nextVersion,
-        htmlContent,
-        sectionData: {
-          heroData: sections.heroData,
-          profileData: sections.profileData,
-          diagnosisData: sections.diagnosisData,
-          competitorData: sections.competitorData,
-          serviceData: sections.serviceData,
-          pricingData: sections.pricingData,
-          outcomeData: sections.outcomeData,
-          timelineData: sections.timelineData,
-          upsellData: sections.upsellData,
-          ctaData: sections.ctaData,
-        } as object,
-        createdAt: now(),
-      },
-    });
-
-    await prisma.activity.create({
-      data: {
-        id: cuid(),
-        type: "PROPOSAL_GENERATED",
-        description: `提案生成完成，自动保存为版本 v${nextVersion}`,
-        userId,
-        proposalId,
-        createdAt: now(),
       },
     });
   } catch (error) {
