@@ -405,10 +405,11 @@ function Step1ClientInfo({
           value={websiteUrl}
           onChange={(e) => setWebsiteUrl(e.target.value)}
           onBlur={() => {
-            const v = websiteUrl.trim();
-            if (v && !/^https?:\/\//i.test(v)) {
-              setWebsiteUrl(`https://${v}`);
-            }
+            let v = websiteUrl.trim();
+            if (!v) return;
+            // 去掉所有开头的协议前缀（含重复前缀），统一补上 https://
+            v = v.replace(/^(https?:\/\/)+/i, "");
+            setWebsiteUrl(`https://${v}`);
           }}
           placeholder="https://www.lcsc.com"
           className="h-9 w-full rounded-lg border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
