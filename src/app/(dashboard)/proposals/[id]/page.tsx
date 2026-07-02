@@ -410,6 +410,31 @@ export default function ProposalEditorPage() {
     URL.revokeObjectURL(url);
   }
 
+  async function exportPdf() {
+    if (!proposal?.htmlContent) return;
+    setExporting(true);
+    try {
+      const res = await fetch(`/api/proposals/${proposalId}/export-pdf`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "导出 PDF 失败");
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Sitesfy_x_${proposal.client.name ?? "Client"}_Proposal.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setExporting(false);
+    }
+  }
+
   // Delete proposal
   async function handleDelete() {
     if (!confirm("确认删除此提案？此操作不可撤销。")) return;
@@ -651,8 +676,22 @@ export default function ProposalEditorPage() {
         <Button
           variant="outline"
           size="sm"
-          onClick={exportHtml}
+          onClick={exportPdf}
           disabled={exporting || !proposal.htmlContent}
+          className="gap-1"
+        >
+          {exporting ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Download className="h-3.5 w-3.5" />
+          )}
+          下载 PDF
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={exportHtml}
+          disabled={!proposal.htmlContent}
           className="gap-1"
         >
           <Download className="h-3.5 w-3.5" />
