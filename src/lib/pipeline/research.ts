@@ -24,6 +24,47 @@ export interface ResearchProgress {
   error?: string;
 }
 
+function buildFallbackResearch(
+  clientName: string,
+  websiteContent: string,
+  failed: string[]
+): ResearchResult {
+  const excerpt = websiteContent.slice(0, 1200);
+  const fallbackNote =
+    failed.length > 0
+      ? `AI 研究部分维度失败，已使用官网抓取文本生成基础占位资料。失败维度: ${failed.join(", ")}`
+      : "AI 研究未返回完整结构，已使用官网抓取文本生成基础占位资料。";
+
+  return {
+    hardData: {
+      companyName: clientName,
+      source: "website_fallback",
+      note: fallbackNote,
+      availableEvidence: excerpt,
+    },
+    ecosystem: {
+      source: "website_fallback",
+      note: "未能提取完整业务生态，请在后续编辑中补充子品牌、社区、工具或媒体资产。",
+    },
+    differentiation: {
+      companyName: clientName,
+      source: "website_fallback",
+      differentiationSummary:
+        `${clientName} 的差异化定位需要基于官网内容和补充材料进一步确认。`,
+      note: fallbackNote,
+      availableEvidence: excerpt,
+    },
+    diagnosis: {
+      source: "website_fallback",
+      note: "未能完成结构化官网诊断，请在提案草稿中人工复核 SEO、多语言、内容深度与技术体验。",
+    },
+    assets: {
+      source: "website_fallback",
+      note: "未能提取完整可利用资产，请补充案例、产品资料、行业数据或品牌素材。",
+    },
+  };
+}
+
 /**
  * Fetch and clean website content. Returns raw text for Claude to analyze.
  */
@@ -110,18 +151,13 @@ export async function runResearch(
     }
   }
 
-  // At least hardData and differentiation are critical for proposal generation
-  const criticalKeys: (keyof ResearchResult)[] = ["hardData", "differentiation"];
-  const missingCritical = criticalKeys.filter(
-    (k) => Object.keys(researchResult[k]).length === 0
-  );
-
-  if (missingCritical.length > 0) {
-    throw new Error(
-      `研究失败: 关键维度缺失 [${missingCritical.join(", ")}]。` +
-      `成功: ${succeeded.length}/5, 失败: ${failed.length}/5` +
-      (failed.length > 0 ? ` (${failed.join(", ")})` : "")
-    );
+  if (failed.length > 0) {
+    const fallback = buildFallbackResearch(clientName, websiteContent, failed);
+    for (const key of Object.keys(researchResult) as (keyof ResearchResult)[]) {
+      if (Object.keys(researchResult[key]).length === 0) {
+        researchResult[key] = fallback[key];
+      }
+    }
   }
 
   return researchResult;
