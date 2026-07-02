@@ -21,9 +21,12 @@ async function launchBrowser() {
   const puppeteer = await import("puppeteer");
   const chromium = await import("@sparticuz/chromium");
   const isServerless = Boolean(process.env.VERCEL || process.env.AWS_REGION);
+  const args = isServerless
+    ? [...chromium.default.args, "--no-sandbox", "--disable-setuid-sandbox"]
+    : ["--no-sandbox", "--disable-setuid-sandbox"];
 
   return puppeteer.default.launch({
-    args: isServerless ? chromium.default.args : ["--no-sandbox", "--disable-setuid-sandbox"],
+    args,
     defaultViewport: { width: 1280, height: 1600 },
     executablePath: isServerless ? await chromium.default.executablePath() : undefined,
     headless: true,
