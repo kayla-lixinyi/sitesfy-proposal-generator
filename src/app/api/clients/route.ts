@@ -67,19 +67,25 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const id = cuid();
     const timestamp = now();
-    const client = await prisma.client.create({
-      data: {
-        id: cuid(),
-        name,
-        nameZh: nameZh || undefined,
-        websiteUrl: websiteUrl || "https://placeholder.local",
-        industry: industry || undefined,
-        targetMarket: targetMarket || undefined,
-        createdAt: timestamp,
-        updatedAt: timestamp,
-      },
-    });
+
+    // Prisma v7 + WASM 编译器忽略 @id @default(cuid()) 和 @updatedAt 的显式值，
+    // 用 $executeRaw 直接写入，绕过 ORM 层确保 id/updatedAt 不为 null
+    await prisma.$executeRaw`
+      INSERT INTO "Client" ("id", "name", "nameZh", "websiteUrl", "industry", "targetMarket", "createdAt", "updatedAt")
+      VALUES (
+        ${id},
+        ${name},
+        ${nameZh || null},
+        ${websiteUrl || "https://placeholder.local"},
+        ${industry || null},
+        ${targetMarket || null},
+        ${timestamp},
+        ${timestamp}
+      )
+    `;
+    const client = await prisma.client.findUnique({ where: { id } });
 
     return NextResponse.json(client, { status: 201 });
   } catch (error) {

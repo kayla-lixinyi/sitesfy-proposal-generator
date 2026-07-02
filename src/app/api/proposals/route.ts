@@ -86,35 +86,39 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const proposalId = cuid();
     const timestamp = now();
-    const proposal = await prisma.proposal.create({
-      data: {
-        id: cuid(),
-        title,
-        clientId,
-        authorId: session.user.id,
-        status: "DRAFT",
-        createdAt: timestamp,
-        updatedAt: timestamp,
-        ...sectionData,
-      },
-      include: {
-        client: { select: { id: true, name: true } },
-      },
+
+    // Prisma v7 + WASM 编译器忽略 @id/@updatedAt 的显式值，用 $executeRaw 绕过
+    await prisma.$executeRaw`
+      INSERT INTO "Proposal" ("id", "title", "clientId", "authorId", "status", "createdAt", "updatedAt")
+      VALUES (
+        ${proposalId},
+        ${title},
+        ${clientId},
+        ${session.user.id},
+        'DRAFT',
+        ${timestamp},
+        ${timestamp}
+      )
+    `;
+    const proposal = await prisma.proposal.findUnique({
+      where: { id: proposalId },
+      include: { client: { select: { id: true, name: true } } },
     });
 
-    await prisma.activity.create({
-      data: {
-        id: cuid(),
-        type: duplicateFrom ? "PROPOSAL_DUPLICATED" : "PROPOSAL_CREATED",
-        description: duplicateFrom
-          ? `复制了提案「${title}」`
-          : `创建了提案「${title}」`,
-        userId: session.user.id,
-        proposalId: proposal.id,
-        createdAt: now(),
-      },
-    });
+    const activityId = cuid();
+    await prisma.$executeRaw`
+      INSERT INTO "Activity" ("id", "type", "description", "userId", "proposalId", "createdAt")
+      VALUES (
+        ${activityId},
+        ${duplicateFrom ? "PROPOSAL_DUPLICATED" : "PROPOSAL_CREATED"},
+        ${duplicateFrom ? `复制了提案「${title}」` : `创建了提案「${title}」`},
+        ${session.user.id},
+        ${proposalId},
+        ${timestamp}
+      )
+    `;
 
     return NextResponse.json(proposal, { status: 201 });
   } catch (error) {
